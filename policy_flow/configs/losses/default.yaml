@@ -1,0 +1,2 @@
+_target_: policy_flow.losses.base_loss.BaseLoss
+weights: 1

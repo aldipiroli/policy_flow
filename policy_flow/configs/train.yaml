@@ -1,0 +1,7 @@
+defaults:
+  - artifacts: default
+  - datasets@dataset: default
+  - models@model: default
+  - losses@loss: default
+  - optim: default
+  - _self_

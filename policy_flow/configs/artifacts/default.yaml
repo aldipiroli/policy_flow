@@ -1,0 +1,6 @@
+root_dir: runs
+folders:
+  img: img
+  log: log
+  aim_log: aim_log
+  ckpts: ckpts
