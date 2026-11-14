@@ -1,7 +1,8 @@
 defaults:
   - artifacts: default
   - datasets@dataset: pusht
-  - models@model: default
+  - models@model: base_policy
   - losses@loss: default
+  - metrics: default
   - optim: default
   - _self_
