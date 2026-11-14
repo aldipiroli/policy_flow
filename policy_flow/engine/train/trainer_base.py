@@ -119,6 +119,7 @@ class TrainerBase(ABC):
     def set_models(self, model):
         self.model = model
         self.model = self.model.to(self.device)
+        self.model.compile(mode="default")
 
         self.logger.info("Model:")
         ml_utils.count_model_params(self.model, self.logger)
