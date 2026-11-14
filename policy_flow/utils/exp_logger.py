@@ -27,8 +27,8 @@ class ExperimentLogger:
             return
         self.run.track(_float(value), name=name, step=step)
 
-    def write_dict(self, values, step, prefix=""):
-        if step % self.log_every != 0:
+    def write_dict(self, values, step, prefix="", force=False):
+        if not force and step % self.log_every != 0:
             return
         for k, v in values.items():
             name = f"{prefix}/{k}" if prefix else k

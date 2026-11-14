@@ -4,12 +4,13 @@ import torch
 from tqdm import tqdm
 
 from policy_flow.engine.train.trainer_base import TrainerBase
+from policy_flow.utils.misc import set_random_seeds
 
 
 class TrainPolicy(TrainerBase):
     def __init__(self, cfg, logger):
         super().__init__(cfg, logger)
-        self.env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode="human")
+        self.env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode=None)
         self.logger.info(f"Loaded {self.env}, {gym_pusht}")
 
     def train(self):
@@ -56,9 +57,13 @@ class TrainPolicy(TrainerBase):
                 pred = self.model(state)
             self.metrics.update(pred, actions)
             pbar.set_postfix({"mode": mode})
+        # validation
         results = self.metrics.compute()
         self.metrics.print_metrics()
         self.exp_logger.write_dict(results, self.total_iters_train, prefix=mode)
+        # n-rollouts
+        summary = self.evaluate_envs()
+        self.exp_logger.write_dict(summary, self.total_iters_train, prefix="rollout", force=True)
         self.ckpt_manager.is_best_ckpt(results[self.metrics.main_metric])
 
     def post_process_actions(self, pred):
@@ -67,9 +72,10 @@ class TrainPolicy(TrainerBase):
         return pred
 
     @torch.no_grad()
-    def evaluate_env(self):
+    def evaluate_env(self, seed=42, render=False):
+        set_random_seeds(seed)
         self.model.eval()
-        state, info = self.env.reset()
+        state, info = self.env.reset(seed=seed)
         done = False
         max_coverage = 0.0
 
@@ -84,11 +90,25 @@ class TrainPolicy(TrainerBase):
             for curr_action in actions:
                 curr_action = curr_action.cpu().numpy().clip(0, 512)
                 state, reward, terminated, truncated, info = self.env.step(curr_action)
-                self.env.render()
+                if render:
+                    self.env.render()
                 max_coverage = max(max_coverage, info["coverage"])
                 done = terminated or truncated
                 if done:
                     break
 
-        status = "✅" if info["is_success"] else "❌"
-        self.logger.info(f"{status} Success: {info['is_success']}, max coverage: {max_coverage:.4f}")
+        return {"seed": seed, "success": bool(info["is_success"]), "max_coverage": float(max_coverage)}
+
+    def evaluate_envs(self, n_rollouts=100):
+        results = [self.evaluate_env(seed) for seed in tqdm(range(n_rollouts), desc="Evaluating")]
+        best = max(results, key=lambda result: result["max_coverage"])
+        summary = {
+            "success_rate": sum(result["success"] for result in results) / len(results),
+            "mean_max_coverage": sum(result["max_coverage"] for result in results) / len(results),
+            "best_seed": best["seed"],
+        }
+        self.logger.info(
+            f"{n_rollouts} rollouts: success rate: {summary['success_rate']:.1%}, "
+            f"mean max coverage: {summary['mean_max_coverage']:.4f}"
+        )
+        return summary
