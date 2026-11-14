@@ -1,8 +1,6 @@
 import torch
-from tqdm import tqdm
-
 from shiko.engine.train.trainer_base import TrainerBase
-from shiko.utils import ml as ml_utils
+from tqdm import tqdm
 
 
 class TrainPushT(TrainerBase):
