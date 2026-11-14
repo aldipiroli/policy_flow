@@ -14,5 +14,7 @@ class BasePolicy(BaseModel):
         )
 
     def forward(self, x):
+        b = x.shape[0]
         actions = self.model(x)
+        actions = actions.reshape(b, -1)
         return actions

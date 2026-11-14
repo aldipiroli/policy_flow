@@ -1,9 +1,10 @@
 import torch
-from shiko.engine.train.trainer_base import TrainerBase
 from tqdm import tqdm
 
+from policy_flow.engine.train.trainer_base import TrainerBase
 
-class TrainPushT(TrainerBase):
+
+class TrainPolicy(TrainerBase):
     def train(self):
         self.logger.info("Started training..")
         start_epoch = self.epoch
@@ -22,16 +23,17 @@ class TrainPushT(TrainerBase):
     def train_one_epoch(self, mode="train"):
         self.model.train()
         pbar = tqdm(enumerate(self.train_loader), total=len(self.train_loader), desc=mode)
-        for _batch_idx, data in pbar:
+        for _batch_idx, (state, actions) in pbar:
             with self.autocast():
-                pred, target, valid = self.forward_batch(data)
-            loss, loss_dict = self.loss_fn(pred, target, valid)
+                state = state.to(self.device)
+                actions = actions.to(self.device)
+                pred = self.model(state)
+            loss, loss_dict = self.loss_fn(pred, actions)
             self.exp_logger.write_dict(loss_dict, self.total_iters_train, prefix=mode)
             self.optimize_step(loss)
             self.update_pbar(pbar, mode, loss)
             self.exp_logger.write_float(self.get_lr(), self.total_iters_train, f"{mode}/lr")
             self.total_iters_train += 1
-            self.evaluate_and_save()
         self.exp_logger.write_float(self.get_epoch_time(), self.epoch, f"{mode}/epoch_time")
 
     @torch.no_grad()
@@ -39,13 +41,13 @@ class TrainPushT(TrainerBase):
         self.model.eval()
         self.metrics.reset()
         pbar = tqdm(enumerate(self.val_loader), total=len(self.val_loader), desc=mode)
-        for batch_idx, data in pbar:
+        for _batch_idx, (state, actions) in pbar:
             with self.autocast():
-                pred, target, valid = self.forward_batch(data)
-            self.metrics.update(pred, target, valid)
+                state = state.to(self.device)
+                actions = actions.to(self.device)
+                pred = self.model(state)
+            self.metrics.update(pred, actions)
             pbar.set_postfix({"mode": mode})
-            if batch_idx >= self.cfg.optim.eval_steps:
-                break
         results = self.metrics.compute()
         self.metrics.print_metrics()
         self.exp_logger.write_dict(results, self.total_iters_train, prefix=mode)

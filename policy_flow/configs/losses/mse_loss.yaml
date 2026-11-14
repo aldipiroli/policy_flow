@@ -1,0 +1,2 @@
+_target_: policy_flow.losses.mse_loss.MSELoss
+weights: 1

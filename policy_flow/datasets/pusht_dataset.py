@@ -76,4 +76,5 @@ class PushtDataset(BaseDataset):
 
         action_chunk = self.actions[t : t + self.chunk_size]  # (chunk_size, 2): agent_x, agent_y
         action_chunk = torch.from_numpy(action_chunk).float()
+        action_chunk = action_chunk.reshape(-1)
         return state, action_chunk
