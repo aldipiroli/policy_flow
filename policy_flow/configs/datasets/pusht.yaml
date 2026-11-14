@@ -1,0 +1,6 @@
+_target_: policy_flow.datasets.pusht_dataset.PushtDataset
+root_dir: "data/"
+chunk_size: 16
+download: true
+val_ratio: 0.1
+seed: 42

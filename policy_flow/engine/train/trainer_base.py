@@ -171,10 +171,8 @@ class TrainerBase(ABC):
             self.save_checkpoint()
         self.exp_logger.close()
 
-    @abstractmethod
     def train_one_epoch(self):
         pass
 
-    @abstractmethod
     def evaluate_one_epoch(self):
         pass

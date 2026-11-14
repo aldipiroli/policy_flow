@@ -1,6 +1,6 @@
 defaults:
   - artifacts: default
-  - datasets@dataset: default
+  - datasets@dataset: pusht
   - models@model: default
   - losses@loss: default
   - optim: default
