@@ -1,3 +1,4 @@
+import gymnasium as gym
 import torch
 from tqdm import tqdm
 
@@ -5,19 +6,26 @@ from policy_flow.engine.train.trainer_base import TrainerBase
 
 
 class TrainPolicy(TrainerBase):
+    def __init__(self, cfg, logger):
+        super().__init__(cfg, logger)
+        self.env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode="human")
+
     def train(self):
         self.logger.info("Started training..")
         start_epoch = self.epoch
         for epoch in range(start_epoch, self.cfg.optim.epochs):
             self.epoch = epoch
-            self.evaluate_and_save()
             self.train_one_epoch()
+            self.evaluate_and_save(epoch)
+        self.env.close()
         self.exp_logger.close()
 
-    def evaluate_and_save(self):
-        self.evaluate_one_epoch()
-        self.save_checkpoint()
-        self.model.train()
+    def evaluate_and_save(self, epoch):
+        if epoch % 100 == 0:
+            self.evaluate_one_epoch()
+            self.evaluate_env()
+            self.save_checkpoint()
+            self.model.train()
 
     def train_one_epoch(self, mode="train"):
         self.model.train()
@@ -55,3 +63,28 @@ class TrainPolicy(TrainerBase):
     def post_process_actions(self, pred):
         pred = pred * 512.0
         return pred
+
+    @torch.no_grad()
+    def evaluate_env(self):
+        self.model.eval()
+        state, info = self.env.reset()
+        done = False
+        max_coverage = 0.0
+
+        while not done:
+            state = torch.as_tensor(state, dtype=torch.float32, device=self.device)
+            state = self.train_dataset.normalize_state(state)
+            state = state.unsqueeze(0)
+
+            pred = self.model(state)
+            actions = self.post_process_actions(pred)
+            actions = actions.reshape(-1, self.cfg.dataset.action_size)
+
+            action = actions[0].cpu().numpy().clip(0, 512)
+            state, reward, terminated, truncated, info = self.env.step(action)
+            self.env.render()
+
+            max_coverage = max(max_coverage, info["coverage"])
+            done = terminated or truncated
+
+        self.logger.info(f"Success: {info['is_success']}, max coverage: {max_coverage:.4f}")
