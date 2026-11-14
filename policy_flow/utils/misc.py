@@ -28,15 +28,16 @@ def load_config(config_file, overrides=None):
         return compose(config_name=config_name, overrides=overrides or [])
 
 
-def make_artifacts_dirs(cfg, debug=False):
+def make_artifacts_dirs(cfg, debug=False, prefix=""):
     root = Path(cfg.artifacts.root_dir)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    name_prefix = f"{prefix}_" if prefix else ""
     if debug:
-        root = root / "debug"
+        root = root / f"{name_prefix}debug"
         if root.exists():
             shutil.rmtree(root)
     else:
-        root = root / stamp
+        root = root / f"{name_prefix}{stamp}"
 
     cfg.artifacts.root_dir = root
     root.mkdir(parents=True, exist_ok=True)
@@ -81,11 +82,11 @@ def set_random_seeds(seed=42):
         torch.mps.manual_seed(seed)
 
 
-def run_initial_setup(args):
+def run_initial_setup(args, prefix=""):
     overrides = getattr(args, "overrides", [])
     cfg = load_config(args.cfg_file, overrides=overrides)
     set_random_seeds(cfg.get("seed", 42))
-    cfg = make_artifacts_dirs(cfg, debug=args.debug)
+    cfg = make_artifacts_dirs(cfg, debug=args.debug, prefix=prefix)
     logger = get_logger(cfg.artifacts.folders["log"])
     if not args.debug:
         save_git_state(cfg, logger)

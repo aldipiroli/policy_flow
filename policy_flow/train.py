@@ -6,7 +6,7 @@ import policy_flow.utils.misc as misc_utils
 
 
 def train(args):
-    cfg, logger = misc_utils.run_initial_setup(args)
+    cfg, logger = misc_utils.run_initial_setup(args, prefix="train")
     trainer = get_class(cfg.optim._target_)(cfg, logger)
     trainer.initialize()
     if args.ckpt is not None:

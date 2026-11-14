@@ -1,3 +1,4 @@
+import gym_pusht
 import gymnasium as gym
 import torch
 from tqdm import tqdm
@@ -9,6 +10,7 @@ class TrainPolicy(TrainerBase):
     def __init__(self, cfg, logger):
         super().__init__(cfg, logger)
         self.env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode="human")
+        self.logger.info(f"Loaded {self.env}, {gym_pusht}")
 
     def train(self):
         self.logger.info("Started training..")
@@ -83,8 +85,10 @@ class TrainPolicy(TrainerBase):
                 curr_action = curr_action.cpu().numpy().clip(0, 512)
                 state, reward, terminated, truncated, info = self.env.step(curr_action)
                 self.env.render()
+                max_coverage = max(max_coverage, info["coverage"])
+                done = terminated or truncated
+                if done:
+                    break
 
-            max_coverage = max(max_coverage, info["coverage"])
-            done = terminated or truncated
-
-        self.logger.info(f"Success: {info['is_success']}, max coverage: {max_coverage:.4f}")
+        status = "✅" if info["is_success"] else "❌"
+        self.logger.info(f"{status} Success: {info['is_success']}, max coverage: {max_coverage:.4f}")
