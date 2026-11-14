@@ -69,12 +69,20 @@ class PushtDataset(BaseDataset):
     def __len__(self):
         return len(self.indices)
 
+    @staticmethod
+    def normalize_state(state):
+        return state / state.new_tensor([512.0, 512.0, 512.0, 512.0, 2 * np.pi])
+
+    @staticmethod
+    def normalize_action(action):
+        return action / 512.0
+
     def __getitem__(self, idx):
         t = int(self.indices[idx])
         state = self.states[t]  # [agent_x, agent_y, block_x, block_y, block_angle]
-        state = torch.from_numpy(state).float()
+        state = self.normalize_state(torch.from_numpy(state).float())
 
         action_chunk = self.actions[t : t + self.chunk_size]  # (chunk_size, 2): agent_x, agent_y
-        action_chunk = torch.from_numpy(action_chunk).float()
+        action_chunk = self.normalize_action(torch.from_numpy(action_chunk).float())
         action_chunk = action_chunk.reshape(-1)
         return state, action_chunk

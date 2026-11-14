@@ -1,0 +1,2 @@
+_target_: policy_flow.engine.metrics.mse_metric.MSEMetric
+higher_is_better: false

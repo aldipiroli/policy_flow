@@ -3,6 +3,6 @@ defaults:
   - datasets@dataset: pusht
   - models@model: base_policy
   - losses@loss: mse_loss
-  - metrics: default
+  - metrics: mse_metric
   - optim: train_base_policy
   - _self_

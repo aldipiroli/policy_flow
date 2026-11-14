@@ -81,7 +81,7 @@ class TrainerBase(ABC):
             shuffle=True,
             drop_last=True,
             num_workers=self.cfg.optim.train_num_workers,
-            prefetch_factor=1,
+            prefetch_factor=1 if self.cfg.optim.train_num_workers > 0 else None,
             persistent_workers=False,
         )
         self.logger.info(f"Train Dataset: {self.train_dataset}")

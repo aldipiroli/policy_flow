@@ -10,12 +10,11 @@ class TrainPolicy(TrainerBase):
         start_epoch = self.epoch
         for epoch in range(start_epoch, self.cfg.optim.epochs):
             self.epoch = epoch
+            self.evaluate_and_save()
             self.train_one_epoch()
         self.exp_logger.close()
 
     def evaluate_and_save(self):
-        if self.total_iters_train % self.cfg.optim.steps_per_epoch != 0:
-            return
         self.evaluate_one_epoch()
         self.save_checkpoint()
         self.model.train()
@@ -52,3 +51,7 @@ class TrainPolicy(TrainerBase):
         self.metrics.print_metrics()
         self.exp_logger.write_dict(results, self.total_iters_train, prefix=mode)
         self.ckpt_manager.is_best_ckpt(results[self.metrics.main_metric])
+
+    def post_process_actions(self, pred):
+        pred = pred * 512.0
+        return pred
