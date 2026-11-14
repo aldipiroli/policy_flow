@@ -11,7 +11,7 @@ def train(args):
     trainer.initialize()
     if args.ckpt is not None:
         trainer.load_checkpoint(args.ckpt)
-    trainer.evaluate_one_epoch()
+    trainer.evaluate_env()
 
 
 if __name__ == "__main__":

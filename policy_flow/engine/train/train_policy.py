@@ -23,7 +23,6 @@ class TrainPolicy(TrainerBase):
     def evaluate_and_save(self, epoch):
         if epoch % 100 == 0:
             self.evaluate_one_epoch()
-            self.evaluate_env()
             self.save_checkpoint()
             self.model.train()
 
@@ -62,6 +61,7 @@ class TrainPolicy(TrainerBase):
 
     def post_process_actions(self, pred):
         pred = pred * 512.0
+        pred = pred.reshape(-1, self.cfg.dataset.action_size)
         return pred
 
     @torch.no_grad()
@@ -78,11 +78,11 @@ class TrainPolicy(TrainerBase):
 
             pred = self.model(state)
             actions = self.post_process_actions(pred)
-            actions = actions.reshape(-1, self.cfg.dataset.action_size)
 
-            action = actions[0].cpu().numpy().clip(0, 512)
-            state, reward, terminated, truncated, info = self.env.step(action)
-            self.env.render()
+            for curr_action in actions:
+                curr_action = curr_action.cpu().numpy().clip(0, 512)
+                state, reward, terminated, truncated, info = self.env.step(curr_action)
+                self.env.render()
 
             max_coverage = max(max_coverage, info["coverage"])
             done = terminated or truncated
