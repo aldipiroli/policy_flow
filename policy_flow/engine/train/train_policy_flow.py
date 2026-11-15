@@ -24,7 +24,7 @@ class TrainPolicyFlow(TrainerBase):
         self.exp_logger.close()
 
     def evaluate_and_save(self, epoch):
-        if epoch % 100 == 0:
+        if epoch % 100 == 0 or epoch == self.cfg.optim.epochs - 1:
             self.evaluate_one_epoch()
             self.model.train()
             self.save_checkpoint()
@@ -32,7 +32,7 @@ class TrainPolicyFlow(TrainerBase):
     def interpolate_action(self, actions):
         b = actions.shape[0]
         t = torch.rand(b, 1).to(actions.device)
-        actions_0 = torch.randn(actions.shape).to(actions.device)
+        actions_0 = torch.randn(actions.shape).to(actions.device) * self.cfg.model.noise_std
         actions_t = t * actions + (1 - t) * actions_0
         velocity = actions - actions_0
         return actions_t, t, velocity
@@ -85,7 +85,10 @@ class TrainPolicyFlow(TrainerBase):
 
     def integrate_action(self, state):
         state = state.to(self.device)
-        actions_t = torch.randn((1, self.cfg.model.chunk_size * self.cfg.model.action_size)).to(state.device)
+        actions_t = (
+            torch.randn((1, self.cfg.model.chunk_size * self.cfg.model.action_size)).to(state.device)
+            * self.cfg.model.noise_std
+        )
         n = self.cfg.model.integration_steps
         for i in range(n):
             t = torch.tensor([i / n]).unsqueeze(1).to(self.device)

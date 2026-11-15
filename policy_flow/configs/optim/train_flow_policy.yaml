@@ -8,3 +8,5 @@ epochs: 1000
 train_batch_size: 512
 grad_accum_steps: 1
 validation_batch_size: 8
+lr: 0.0003
+weight_decay: 0.01
