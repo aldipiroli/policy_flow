@@ -27,7 +27,7 @@ class TrainPolicyFlow(TrainerBase):
         if epoch % 100 == 0:
             self.evaluate_one_epoch()
             self.model.train()
-        self.save_checkpoint()
+            self.save_checkpoint()
 
     def interpolate_action(self, actions):
         b = actions.shape[0]
