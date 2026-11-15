@@ -1,0 +1,8 @@
+defaults:
+  - artifacts: default
+  - datasets@dataset: pusht
+  - models@model: flow_policy
+  - losses@loss: mse_loss
+  - metrics: mse_metric
+  - optim: train_flow_policy
+  - _self_

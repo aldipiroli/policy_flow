@@ -1,0 +1,10 @@
+defaults:
+  - default
+  - _self_
+
+_target_: policy_flow.engine.train.train_policy_flow.TrainPolicyFlow
+
+epochs: 1000
+train_batch_size: 512
+grad_accum_steps: 1
+validation_batch_size: 8
