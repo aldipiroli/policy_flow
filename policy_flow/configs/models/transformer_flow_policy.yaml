@@ -1,0 +1,7 @@
+_target_: policy_flow.models.transformer_flow_policy.TransformerFlowPolicy
+state_size: ${dataset.state_size}
+action_size: ${dataset.action_size}
+chunk_size: ${dataset.chunk_size}
+integration_steps: 10
+noise_std: 0.1
+dim: 128
