@@ -22,6 +22,7 @@ class TransformerFlowPolicy(BaseModel):
         self.transformer = nn.TransformerEncoder(layer, num_layers=2)
         self.project_input = nn.Linear(self.state_size + self.action_size + 1, self.dim)
         self.project_output = nn.Linear(self.dim, self.action_size)
+        self.position = nn.Parameter(torch.randn(1, self.chunk_size, self.dim) * 0.02)
 
     def forward(self, x):
         b = x.shape[0]
@@ -34,7 +35,7 @@ class TransformerFlowPolicy(BaseModel):
         time = time[:, None, :].expand(-1, actions.shape[1], -1)
 
         xin = torch.cat([state, actions, time], -1)
-        xin = self.project_input(xin)
+        xin = self.project_input(xin) + self.position
         xout = self.transformer(xin)
         xout = self.project_output(xout)
         pred_actions = xout.reshape(b, self.action_size * self.chunk_size)
