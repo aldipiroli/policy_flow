@@ -26,15 +26,16 @@ class TrainPolicyFlow(TrainerBase):
     def evaluate_and_save(self, epoch):
         if epoch % 100 == 0:
             self.evaluate_one_epoch()
-            self.save_checkpoint()
             self.model.train()
+        self.save_checkpoint()
 
     def interpolate_action(self, actions):
         b = actions.shape[0]
         t = torch.rand(b, 1).to(actions.device)
         actions_0 = torch.randn(actions.shape).to(actions.device)
         actions_t = t * actions + (1 - t) * actions_0
-        return actions_t, t
+        velocity = actions - actions_0
+        return actions_t, t, velocity
 
     def train_one_epoch(self, mode="train"):
         self.model.train()
@@ -43,10 +44,10 @@ class TrainPolicyFlow(TrainerBase):
             with self.autocast():
                 state = state.to(self.device)
                 actions = actions.to(self.device)
-                actions_t, t = self.interpolate_action(actions)
+                actions_t, t, velocity = self.interpolate_action(actions)
                 x = torch.cat((state, actions_t, t), -1)
                 pred = self.model(x)
-            loss, loss_dict = self.loss_fn(pred, actions)
+            loss, loss_dict = self.loss_fn(pred, velocity)
             self.exp_logger.write_dict(loss_dict, self.total_iters_train, prefix=mode)
             self.optimize_step(loss)
             self.update_pbar(pbar, mode, loss)
@@ -63,10 +64,10 @@ class TrainPolicyFlow(TrainerBase):
             with self.autocast():
                 state = state.to(self.device)
                 actions = actions.to(self.device)
-                actions_t, t = self.interpolate_action(actions)
+                actions_t, t, velocity = self.interpolate_action(actions)
                 x = torch.cat((state, actions_t, t), -1)
                 pred = self.model(x)
-            self.metrics.update(pred, actions)
+            self.metrics.update(pred, velocity)
             pbar.set_postfix({"mode": mode})
         # validation
         results = self.metrics.compute()
@@ -87,7 +88,7 @@ class TrainPolicyFlow(TrainerBase):
         actions_t = torch.randn((1, self.cfg.model.chunk_size * self.cfg.model.action_size)).to(state.device)
         n = self.cfg.model.integration_steps
         for i in range(n):
-            t = torch.tensor([i]).unsqueeze(1).to(self.device)
+            t = torch.tensor([i / n]).unsqueeze(1).to(self.device)
             x = torch.cat((state, actions_t, t), -1)
             actions_t = actions_t + 1 / n * self.model(x)
         return actions_t
