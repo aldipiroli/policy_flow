@@ -24,3 +24,5 @@ uv run policy_flow/evaluate.py policy_flow/configs/flow_policy.yaml --ckpt path/
 ```
 
 ### Qualitative Results
+https://github.com/user-attachments/assets/51448aa6-73e8-4708-a60f-29e88fae2e1d
+
