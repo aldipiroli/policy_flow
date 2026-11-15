@@ -2,3 +2,4 @@ _target_: policy_flow.models.flow_policy.FlowPolicy
 state_size: ${dataset.state_size}
 action_size: ${dataset.action_size}
 chunk_size: ${dataset.chunk_size}
+integration_steps: 10

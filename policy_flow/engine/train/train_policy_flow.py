@@ -82,6 +82,16 @@ class TrainPolicyFlow(TrainerBase):
         pred = pred.reshape(-1, self.cfg.dataset.action_size)
         return pred
 
+    def integrate_action(self, state):
+        state = state.to(self.device)
+        actions_t = torch.randn((1, self.cfg.model.chunk_size * self.cfg.model.action_size)).to(state.device)
+        n = self.cfg.model.integration_steps
+        for i in range(n):
+            t = torch.tensor([i]).unsqueeze(1).to(self.device)
+            x = torch.cat((state, actions_t, t), -1)
+            actions_t = actions_t + 1 / n * self.model(x)
+        return actions_t
+
     @torch.no_grad()
     def evaluate_env(self, seed=42, render=False):
         set_random_seeds(seed)
@@ -95,8 +105,8 @@ class TrainPolicyFlow(TrainerBase):
             state = self.train_dataset.normalize_state(state)
             state = state.unsqueeze(0)
 
-            pred = self.model(state)
-            actions = self.post_process_actions(pred)
+            preds = self.integrate_action(state)
+            actions = self.post_process_actions(preds)
 
             for curr_action in actions:
                 curr_action = curr_action.cpu().numpy().clip(0, 512)
